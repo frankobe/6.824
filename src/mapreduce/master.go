@@ -32,8 +32,8 @@ func (mr *MapReduce) RunMaster() *list.List {
 	jobChannel := make(chan *DoJobArgs)
 	doneChannel := make(chan int)
 
-	defer close(jobChannel)
 	defer close(doneChannel)
+	defer close(jobChannel)
 
 	getNextWorkerAddr := func() string {
 		var addr string
@@ -49,6 +49,8 @@ func (mr *MapReduce) RunMaster() *list.List {
 		var reply DoJobReply
 		ok := call(workeraddr, "Worker.DoJob", job, &reply)
 		if ok {
+			// order of channel matters, doneChannel blocks main thread
+			// while idleWKChannel blocks non-main ones
 			doneChannel <- 1
 			idleWKChannel <- workeraddr
 		} else {
